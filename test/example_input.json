@@ -1,0 +1,20 @@
+[
+    {
+        "Subject": 130,
+        "unstructuredData": "Genetic Diagnosis:  SCA-panel, RFC1 neg; Symptoms: , Diplopie en oscillopsie, Diplopie + Oscillopsie, Diplopie",
+        "token_count": 37,
+        "products": [
+            {
+                "GeneticDiagnosis": [
+                    "RFC1"
+                ],
+                "Symptoms": [
+                    "Diplopia",
+                    "Oscillopsia"
+                ],
+                "HGVS": []
+            }
+        ],
+        "status": "success"
+    }
+]
