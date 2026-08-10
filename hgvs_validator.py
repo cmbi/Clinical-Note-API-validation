@@ -32,6 +32,9 @@ def validate_hgvs_structure(description):
     """
     Check whether the HGVS description has a basic HGVS-like structure.
 
+    Args:
+        description: HGVS description to check.
+
     Returns:
         (True, None) if the description looks structurally acceptable.
         (False, error_message) otherwise.
@@ -51,11 +54,11 @@ def validate_hgvs_with_mutalyzer(description):
     Validate and normalize an HGVS description with Mutalyzer.
 
     Args:
-        description: String with genetic value.
+        description: HGVS description extracted from the structured output.
 
     Returns:
-        Dictionary with structure validation, API validation, normalized description,
-        warnings, errors and raw API response.
+        Dictionary with structure validation, API validation, normalized 
+        description and errors.
     """
 
     # If gene already found, retrieve the info from the cache
@@ -109,7 +112,17 @@ def validate_hgvs_with_mutalyzer(description):
 
 
 def extract_mutalyzer_messages(response, key):
-    """Extract Mutalyzer errors or warnings safely."""
+    """
+    Extract errors or warnings from a Mutalyzer response.
+
+    Args:
+        response: Mutalyzer API response.
+        key: Field to extract.
+    
+    Returns:
+        List of message strings.  
+    
+    """
     messages = response.get(key, [])
 
     if messages is None:

@@ -18,28 +18,10 @@ def validate_gene_code(gene_code):
         4. Search symbol function as fallback, in case the other functions don't work
 
     Args:
-        gene_code: Name of the gene in the structured field
+        gene_code: Gene symbol extracted from the structured output.
 
     Returns:
-        Dictionary with validation results
-        If the gene is found, the dictionary contains:
-        - gene: original input gene code
-        - valid: True
-        - HGNCId: HGNC identifier
-        - approvedSymbol: approved HGNC gene symbol
-        - geneName: official gene name
-        - status: HGNC status
-        - matchType: type of match found
-
-        If the gene is not found, the dictionary contains:
-        - gene: original input gene code
-        - valid: False
-        - HGNCId: None
-        - approvedSymbol: None
-        - geneName: None
-        - status: None
-        - matchType: attempted match type
-        - error: error message, if applicable
+        Dictionary with gene validation result and HGNC information.
     """
 
     # If gene already found, retrieve the info from the cache
@@ -76,11 +58,6 @@ def validate_gene_code(gene_code):
 def fetch_hgnc(field, value, match_type, min_interval):
     """
     Query the HGNC fetch endpoint for a specific field and value.
-    This helper function is used to check whether a gene code matches a specific
-    HGNC field, such as:
-    - symbol
-    - prev_symbol
-    - alias_symbol
 
     Args:
         field: HGNC field to query. Example: "symbol", "prev_symbol", "alias_symbol"
@@ -89,10 +66,8 @@ def fetch_hgnc(field, value, match_type, min_interval):
         min_interval: Minimum number of seconds to wait between HGNC requests.
 
     Returns:
-        Dictionary with the gene validation result:
-        - If a document is found, this function returns a valid gene result.
-        - If no document is found, it returns an invalid gene result.
-        - If the API request fails, it returns an invalid result with an error message.
+        Dictionary with the HGNC validation result.
+
     """
     url = f"{HGNC_BASE_URL}/fetch/{field}/{quote(value)}"
     response = api_get_json(url, min_interval_seconds=min_interval)
@@ -118,10 +93,7 @@ def search_hgnc_symbol(value, min_interval):
         min_interval: Minimum number of seconds to wait between HGNC requests.
 
     Returns:
-        Dictionary with the gene validation result:
-        - If a document is found, this function returns a valid gene result.
-        - If no document is found, it returns an invalid gene result.
-        - If the API request fails, it returns an invalid result with an error message.
+        Dictionary with the HGNC validation result.
     """
     url = f"{HGNC_BASE_URL}/search/symbol/{quote(value)}"
     response = api_get_json(url, min_interval_seconds=min_interval)
@@ -164,11 +136,6 @@ def gene_result_from_hgnc_doc(input_gene, doc, match_type):
 def empty_gene_result(gene_code, match_type=None, error=None):
     """
     Create a standard output dictionary for an invalid or unknown gene.
-
-    This function is used when:
-        - the input gene code is empty
-        - the HGNC API request fails
-        - no HGNC match is found
 
     Args:
         gene_code: Original gene code provided by the user or extracted from
