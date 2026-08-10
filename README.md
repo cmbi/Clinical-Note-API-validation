@@ -66,19 +66,26 @@ Run the pipeline from the command line, where:
 python main.py input.json validated_output.json validation_errors.json
 ```
 
+If you want to test the program, use [test/example_input.json](test/example_input.json) as input file.
+
 ## Input Format
 
-The input file must be a JSON file following this expected structure example:
+The [input file](test/example_input.json) must be a JSON file following this expected structure example:
 
 ```json
 [
     {
-        "Subject": 130,
-        "unstructuredData": "I am a clinical note with the following patient information...",
+        "Subject": 1,
+        "unstructuredData": "Test clinical note with genetic data as RFC1, and mutation NG_012232.1(NM_004006.2):c.93+1G>T; Symptoms are Diplopia and Oscillopsia",
         "products": [
             {
-                "GeneticDiagnosis": ["RFC1"],
-                "Symptoms": ["Diplopia", "Oscillopsia"],
+                "GeneticDiagnosis": [
+                    "RFC1"
+                ],
+                "Symptoms": [
+                    "Diplopia",
+                    "Oscillopsia"
+                ],
                 "HGVS": ["NG_012232.1(NM_004006.2):c.93+1G>T"]
             }
         ]
@@ -174,7 +181,6 @@ Example structure:
     "unknownSymptoms": []
 }
 ```
-
 
 ## Notes on Validation
 

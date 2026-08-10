@@ -1,8 +1,7 @@
 [
     {
-        "Subject": 130,
-        "unstructuredData": "Genetic Diagnosis:  SCA-panel, RFC1 neg; Symptoms: , Diplopie en oscillopsie, Diplopie + Oscillopsie, Diplopie",
-        "token_count": 37,
+        "Subject": 1,
+        "unstructuredData": "Test clinical note with genetic data as RFC1, and mutation NG_012232.1(NM_004006.2):c.93+1G>T; Symptoms are Diplopia and Oscillopsia",
         "products": [
             {
                 "GeneticDiagnosis": [
@@ -12,9 +11,8 @@
                     "Diplopia",
                     "Oscillopsia"
                 ],
-                "HGVS": []
+                "HGVS": ["NG_012232.1(NM_004006.2):c.93+1G>T"]
             }
-        ],
-        "status": "success"
+        ]
     }
 ]
