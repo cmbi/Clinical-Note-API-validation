@@ -52,10 +52,20 @@ git clone https://github.com/your-username/clinical-note-ontology-validation.git
 cd clinical-note-ontology-validation
 ```
 
-Install the required Python package (Python environment always recommended):
+Python 3.5 or later is needed. The script depends on standard libraries, plus the ones declared in [requirements.txt](requirements.txt).
+
+In order to install the dependencies you need pip and venv Python modules.
+
+- `pip` is available in many Linux distributions (Ubuntu package python-pip, CentOS EPEL package python-pip), and also as pip Python package.
+- `venv` is also available in many Linux distributions (Ubuntu package python3-venv). In some of these distributions venv is integrated into the Python 3.5 (or later) installation.
+
+The creation of a virtual environment and installation of the dependencies in that environment is done running:
 
 ```bash
-python -m pip install -r requirements.txt
+python3 -m venv env
+source env/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 ## Usage
