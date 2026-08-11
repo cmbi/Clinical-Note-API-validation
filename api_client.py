@@ -1,13 +1,10 @@
-# api_client.py
-# Shared helper for API GET requests.
-
 import time
 import requests
 
-from config import REQUEST_TIMEOUT_SECONDS, USER_AGENT
+from config import REQUEST_TIMEOUT_SECONDS
 
 
-_last_request_time_by_host = {}
+last_request_time_by_host = {}
 
 
 def api_get_json(url, params=None, headers=None, min_interval_seconds=0):
@@ -18,11 +15,10 @@ def api_get_json(url, params=None, headers=None, min_interval_seconds=0):
         A Python dictionary/list if the request succeeds and the response is JSON.
         None if the request fails, the status code is not 200, or JSON parsing fails.
     """
-    _respect_rate_limit(url, min_interval_seconds)
+    respect_rate_limit(url, min_interval_seconds)
 
     request_headers = {
-        "Accept": "application/json",
-        "User-Agent": USER_AGENT,
+        "Accept": "application/json"
     }
 
     if headers is not None:
@@ -50,13 +46,13 @@ def api_get_json(url, params=None, headers=None, min_interval_seconds=0):
         return None
 
 
-def _respect_rate_limit(url, min_interval_seconds):
+def respect_rate_limit(url, min_interval_seconds):
     """Simple rate limiter per host."""
     if min_interval_seconds <= 0:
         return
 
     host = url.split("/")[2] if "://" in url else "default"
-    last_request_time = _last_request_time_by_host.get(host)
+    last_request_time = last_request_time_by_host.get(host)
     now = time.monotonic()
 
     if last_request_time is not None:
@@ -64,4 +60,4 @@ def _respect_rate_limit(url, min_interval_seconds):
         if wait_time > 0:
             time.sleep(wait_time)
 
-    _last_request_time_by_host[host] = time.monotonic()
+    last_request_time_by_host[host] = time.monotonic()
