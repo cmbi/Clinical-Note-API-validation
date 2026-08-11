@@ -72,7 +72,7 @@ def validate_hgvs_with_mutalyzer(description):
         result = {
             "input": description,
             "structurallyValid": False,
-            "apiValid": False,
+            "valid": False,
             "normalizedDescription": None,
             "errors": [structure_error]
         }
@@ -88,7 +88,7 @@ def validate_hgvs_with_mutalyzer(description):
         result = {
             "input": description,
             "structurallyValid": True,
-            "apiValid": False,
+            "valid": False,
             "normalizedDescription": None,
             "errors": ["Mutalyzer API request failed"]
         }
@@ -102,7 +102,7 @@ def validate_hgvs_with_mutalyzer(description):
     result = {
         "input": description,
         "structurallyValid": True,
-        "apiValid": len(errors) == 0,
+        "valid": len(errors) == 0,
         "normalizedDescription": normalized_description,
         "errors": errors
         }
