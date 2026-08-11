@@ -1,11 +1,11 @@
 from api_client import api_get_json
-from config import OLS4_BASE_URL, OLS_LLM_MIN_SCORE, OLS_ONTOLOGY
+from config import OLS4_BASE_URL, OLS_LLM_MIN_SCORE, OLS_ONTOLOGY, OLS_LLM_SEARCH
 
 
 ontology_cache = {}
 
 
-def validate_ontology_term(keyword, use_llm_fallback=True):
+def validate_ontology_term(keyword, OLS_LLM_SEARCH=True):
     """
     Retrieve an ontology mapping for a keyword.
 
@@ -32,7 +32,7 @@ def validate_ontology_term(keyword, use_llm_fallback=True):
     # Try exact search function in OLS
     exact_result = exact_ontology_search(keyword)
 
-    if exact_result["valid"] or not use_llm_fallback:
+    if exact_result["valid"] or not OLS_LLM_SEARCH:
         ontology_cache[keyword] = exact_result
         cache_synonyms(exact_result)
         return exact_result
@@ -80,9 +80,9 @@ def exact_ontology_search(keyword):
     docs = response.get("response", {}).get("docs", [])
 
     if len(docs) == 0:
-        return empty_ontology_result(keyword, match_type="not_found")
+        return empty_ontology_result(keyword, match_type="exact_search", error="No results")
 
-    return ontology_result_from_ols_doc(keyword, docs[0], match_type="exact_label_or_synonym")
+    return ontology_result_from_ols_doc(keyword, docs[0], match_type="exact_search")
 
 
 def llm_ontology_search(keyword):
@@ -96,8 +96,7 @@ def llm_ontology_search(keyword):
         Dictionary with the ontology validation result.
 
     """
-
-
+    print('llm ontology search')
     url = f"{OLS4_BASE_URL}/v2/ontologies/{OLS_ONTOLOGY}/classes/llm_search"
     params = {
         "q": keyword,
