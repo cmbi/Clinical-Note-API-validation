@@ -1,6 +1,6 @@
 from hgnc_validator import validate_gene_code
 from hgvs_validator import validate_hgvs_with_mutalyzer
-from hpo_validator import retrieve_hpo_id
+from ontology_validator import validate_ontology_term
 
 def validate_clinical_notes(json_data):
     """
@@ -21,7 +21,7 @@ def validate_clinical_notes(json_data):
     error_summary = {
         "unknownGenes": [],
         "invalidHGVS": [],
-        "unknownSymptoms": [],
+        "unknownPatientData": [],
     }
 
     # Validate each clinical note
@@ -31,7 +31,7 @@ def validate_clinical_notes(json_data):
 
         subject = clinical_note.get("Subject")
 
-        for gene_result in validated_note["ontologyData"]["GeneticDiagnosis"]:
+        for gene_result in validated_note["ontologyData"]["geneticDiagnosis"]:
             if not gene_result.get("valid"):
                 error_summary["unknownGenes"].append({
                     "Subject": subject,
@@ -39,17 +39,17 @@ def validate_clinical_notes(json_data):
                 })
 
         for hgvs_result in validated_note["ontologyData"]["HGVS"]:
-            if not hgvs_result.get("apiValid"):
+            if not hgvs_result.get("valid"):
                 error_summary["invalidHGVS"].append({
                     "Subject": subject,
                     **hgvs_result,
                 })
 
-        for symptom_result in validated_note["ontologyData"]["Symptoms"]:
-            if not symptom_result.get("valid"):
-                error_summary["unknownSymptoms"].append({
+        for patientData in validated_note["ontologyData"]["patientData"]:
+            if not patientData.get("valid"):
+                error_summary["unknownPatientData"].append({
                     "Subject": subject,
-                    **symptom_result,
+                    **patientData,
                 })
 
     return validated_notes, error_summary
@@ -63,14 +63,14 @@ def validate_single_clinical_note(clinical_note):
         clinical_note: A single clinical note from the input
 
     Returns:
-        Dictionary with the Gene data and symptoms validated
+        Dictionary with the Gene data and patient data validated
     """
     # By default, there is always 1 element in the list
     # Therefore, always take the first one
-    product = product[0]
+    product = clinical_note.get("products")[0]
 
-    genes = clean_list(product.get("GeneticDiagnosis"))
-    symptoms = clean_list(product.get("Symptoms"))
+    genes = clean_list(product.get("geneticDiagnosis"))
+    patientData = clean_list(product.get("patientData"))
     hgvs_descriptions = clean_list(product.get("HGVS"))
 
     gene_results = []
@@ -81,20 +81,18 @@ def validate_single_clinical_note(clinical_note):
     for description in hgvs_descriptions:
         hgvs_results.append(validate_hgvs_with_mutalyzer(description))
 
-    symptom_results = []
-    for symptom in symptoms:
-        symptom_results.append(retrieve_hpo_id(symptom))
+    ontology_results = []
+    for ontology_keyword in patientData:
+        ontology_results.append(validate_ontology_term(ontology_keyword))
 
     return {
         "Subject": clinical_note.get("Subject"),
         "unstructuredData": clinical_note.get("unstructuredData"),
-        "token_count": clinical_note.get("token_count"),
         "products": clinical_note.get("products", []),
-        "status": clinical_note.get("status"),
         "ontologyData": {
-            "GeneticDiagnosis": gene_results,
+            "geneticDiagnosis": gene_results,
             "HGVS": hgvs_results,
-            "Symptoms": symptom_results,
+            "patientData": ontology_results,
         },
     }
 
@@ -109,7 +107,7 @@ def clean_list(value):
         output: List of cleaned string values or empty list (if values are not correct)
     """
 
-    if value is None or value == "" or value.upper() == 'NA':
+    if value is None or value == "" or str(value).upper() == 'NA':
         return []
 
     output = []

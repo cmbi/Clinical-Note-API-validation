@@ -3,7 +3,6 @@ import sys
 
 from pipeline import validate_clinical_notes
 
-
 def main():
     if len(sys.argv) != 4:
         print("Usage: python main.py input.json output.json errors.json")

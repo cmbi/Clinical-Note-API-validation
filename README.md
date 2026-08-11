@@ -6,7 +6,7 @@ The project validates three types of extracted clinical entities:
 
 1. **Genes** using the **HGNC REST API**.
 2. **HGVS variant descriptions** using the **Mutalyzer API**.
-3. **Symptoms** using the **OLS4 API** to retrieve **HPO ontology terms**.
+3. Patient-data **Keywords** using the **OLS4 API** to retrieve matching **ontology terms**.
 
 ## What the Pipeline Does
 
@@ -15,7 +15,7 @@ For each clinical note, the pipeline:
 1. Reads the structured JSON output.
 2. Validates gene symbols against HGNC.
 3. Validates HGVS descriptions with Mutalyzer.
-4. Maps symptoms to HPO terms using OLS4.
+4. Maps patient-data keywords to ontology terms using OLS4.
 5. Creates a validated output JSON file.
 6. Creates a separate error summary JSON file.
 
@@ -38,7 +38,10 @@ REQUEST_TIMEOUT_SECONDS = 20
 # API-specific settings
 HGNC_MAX_REQUESTS_PER_SECOND = 8
 OLS_LLM_MIN_SCORE = 0.85
+OLS_ONTOLOGY = "hp" # HPO ontology as default
 ```
+
+The OLS_ONTOLOGY variable defines which ontology is used by the ontology validator. By default, it is set to "hp" to validate symptom keywords against the Human Phenotype Ontology.
 
 ## Installation
 
@@ -79,10 +82,10 @@ The [input file](test/example_input.json) must be a JSON file following this exp
         "unstructuredData": "Test clinical note with genetic data as RFC1, and mutation NG_012232.1(NM_004006.2):c.93+1G>T; Symptoms are Diplopia and Oscillopsia",
         "products": [
             {
-                "GeneticDiagnosis": [
+                "geneticDiagnosis": [
                     "RFC1"
                 ],
-                "Symptoms": [
+                "patientData": [
                     "Diplopia",
                     "Oscillopsia"
                 ],
@@ -99,8 +102,8 @@ The pipeline currently checks these fields inside `products[0]`:
 
 ```json
 {
-    "GeneticDiagnosis": ["RFC1"],
-    "Symptoms": ["Diplopia", "Oscillopsia"],
+    "geneticDiagnosis": ["RFC1"],
+    "patientData": ["Diplopia", "Oscillopsia"],
     "HGVS": ["NG_012232.1(NM_004006.2):c.93+1G>T"]
 }
 ```
@@ -121,9 +124,9 @@ Example structure:
     "unstructuredData": "...",
     "products": [...],
     "ontologyData": {
-        "GeneticDiagnosis": [...],
+        "geneticDiagnosis": [...],
         "HGVS": [...],
-        "Symptoms": [...]
+        "patientData": [...]
     }
 }
 ```
@@ -142,14 +145,14 @@ Example structure:
 }
 ```
 
-#### Example Symptom Validation Output
+#### Example patientData Validation Output
 
 ```json
 {
-    "symptom": "Diplopia",
+    "keyword": "Diplopia",
     "valid": true,
     "IRI": "http://purl.obolibrary.org/obo/HP_0000651",
-    "HPOId": "HP:0000651",
+    "ontologyId": "HP:0000651",
     "label": "Diplopia",
     "ontologyName": "hp",
     "matchType": "exact_label_or_synonym"
@@ -178,7 +181,7 @@ Example structure:
 {
     "unknownGenes": [],
     "invalidHGVS": [],
-    "unknownSymptoms": []
+    "unknownPatientData": []
 }
 ```
 
@@ -192,16 +195,16 @@ The gene validator first checks whether the input is an approved HGNC symbol. If
 
 The HGVS validator uses a basic regular expression before calling Mutalyzer. This avoids unnecessary API calls for clearly invalid strings. However, the regular expression is not a complete HGVS grammar validator.
 
-### HPO Symptom Mapping
+### Patient Data Ontology Mapping
 
-The symptom validator first performs an exact search against HPO labels and synonyms in OLS4 search endpoint. If no exact result is found, it can use the OLS4 LLM search endpoint as a fallback. Semantic matches should be reviewed carefully, especially in clinical or research settings.
+The ontology validator first performs an exact search against ontology labels and synonyms in OLS4 search endpoint. If no exact result is found, it can use the OLS4 LLM search endpoint as a fallback. Semantic matches should be reviewed carefully, especially in clinical or research settings.
 
 ## Limitations
 
 - The pipeline validates extracted structured data but does not perform the original text extraction from clinical notes.
 - The HGVS local check only validates the basic format.
 - API results may change over time depending on updates in HGNC, Mutalyzer or/and OLS4
-- The semantic symptom fallback may return broad or imperfect matches.
+- The semantic ontology fallback may return broad or imperfect matches.
 - Manual review is recommended for uncertain or low-confidence mappings.
 
 ## Author
