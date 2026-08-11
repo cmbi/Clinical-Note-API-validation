@@ -5,13 +5,20 @@
         "products": [
             {
                 "geneticDiagnosis": [
-                    "RFC1"
+                    "RFC1",
+                    "testGene"
+                ],
+                "HGVS": [
+                    "NG_012232.1(NM_004006.2):c.93+1G>T",
+                    "test",
+                    "NT_012232.1(NM_004006.2):c.93+1G>Z"
                 ],
                 "patientData": [
                     "Diplopia",
-                    "Oscillopsia"
-                ],
-                "HGVS": ["NG_012232.1(NM_004006.2):c.93+1G>T"]
+                    "Oscillopsia",
+                    "Oscillopsie",
+                    "Test Data"
+                ]
             }
         ]
     }
