@@ -1,11 +1,11 @@
 from api_client import api_get_json
-from config import OLS4_BASE_URL, OLS_LLM_MIN_SCORE, OLS_ONTOLOGY, OLS_LLM_SEARCH
+from config import OLS4_BASE_URL, OLS_LLM_MIN_SCORE, OLS_LLM_SEARCH
 
 
 ontology_cache = {}
 
 
-def validate_ontology_term(keyword, OLS_LLM_SEARCH=True):
+def validate_ontology_term(keyword, ontology, OLS_LLM_SEARCH=True):
     """
     Retrieve an ontology mapping for a keyword.
 
@@ -15,57 +15,60 @@ def validate_ontology_term(keyword, OLS_LLM_SEARCH=True):
 
     Args:
         keyword: String with the keyword.
+        ontology: Ontology where the keyword will be searched.
         use_llm_fallback: Use OLS LLM search if no argument is given.
 
     Returns:
         Dictionary with the mapping result.
     """
+    
+    cache_key = f"{ontology}:{keyword}"
 
-    if keyword in ontology_cache:
-        return ontology_cache[keyword]
+    if cache_key in ontology_cache:
+        return ontology_cache[cache_key]
 
     if keyword == "":
-        result = empty_ontology_result(keyword, match_type="exact_search", error="Empty ontology result")
-        ontology_cache[keyword] = result
+        result = empty_ontology_result(keyword, ontology, match_type="exact_search", error="Empty ontology result")
+        ontology_cache[cache_key] = result
         return result
 
     # Try exact search function in OLS
-    exact_result = exact_ontology_search(keyword)
+    exact_result = exact_ontology_search(keyword, ontology)
 
     if exact_result["valid"] or not OLS_LLM_SEARCH:
-        ontology_cache[keyword] = exact_result
+        ontology_cache[cache_key] = exact_result
         cache_synonyms(exact_result)
         return exact_result
 
     # If no results in the exact search, use LLM search
     # It always takes a while to do the LLM searches
-    llm_result = llm_ontology_search(keyword)
+    llm_result = llm_ontology_search(keyword, ontology)
 
     if llm_result["valid"]:
-        ontology_cache[keyword] = llm_result
+        ontology_cache[cache_key] = llm_result
         cache_synonyms(llm_result)
         return llm_result
 
-    ontology_cache[keyword] = exact_result
+    ontology_cache[cache_key] = exact_result
     return exact_result
 
 
-def exact_ontology_search(keyword):
+def exact_ontology_search(keyword, ontology):
 
     """
     Search for an exact ontology match using OLS labels and synonyms.
 
     Args:
         keyword: Ontology label to search.
+        ontology: Ontology where the keyword will be searched.
 
     Returns:
         Dictionary with the ontology validation result.
-
     """
     url = f"{OLS4_BASE_URL}/search"
     params = {
         "q": keyword,
-        "ontology": OLS_ONTOLOGY,
+        "ontology": ontology,
         "exact": "true",
         "obsoletes": "false",
         "fieldList": "iri,label,ontology_name,synonym,short_form,obo_id",
@@ -75,29 +78,29 @@ def exact_ontology_search(keyword):
     response = api_get_json(url, params=params)
 
     if response is None:
-        return empty_ontology_result(keyword, match_type="exact_search", error="OLS API request failed")
+        return empty_ontology_result(keyword, ontology, match_type="exact_search", error="OLS API request failed")
 
     docs = response.get("response", {}).get("docs", [])
 
     if len(docs) == 0:
-        return empty_ontology_result(keyword, match_type="exact_search", error="No results")
+        return empty_ontology_result(keyword, ontology, match_type="exact_search", error="No results")
 
-    return ontology_result_from_ols_doc(keyword, docs[0], match_type="exact_search")
+    return ontology_result_from_ols_doc(keyword, ontology, docs[0], match_type="exact_search")
 
 
-def llm_ontology_search(keyword):
+def llm_ontology_search(keyword, ontology):
     """
     Search for a semantic ontology match using the OLS LLM search endpoint.
 
     Args:
         keyword: Ontology label to search.
+        ontology: Ontology where the keyword will be searched.
 
     Returns:
         Dictionary with the ontology validation result.
 
     """
-    print('llm ontology search')
-    url = f"{OLS4_BASE_URL}/v2/ontologies/{OLS_ONTOLOGY}/classes/llm_search"
+    url = f"{OLS4_BASE_URL}/v2/ontologies/{ontology}/classes/llm_search"
     params = {
         "q": keyword,
         "page": 0,
@@ -111,35 +114,37 @@ def llm_ontology_search(keyword):
     response = api_get_json(url, params=params)
 
     if response is None:
-        return empty_ontology_result(keyword, match_type="llm_search", error="OLS LLM search request failed")
+        return empty_ontology_result(keyword, ontology, match_type="llm_search", error="OLS LLM search request failed")
 
     elements = response.get("elements", [])
 
     if len(elements) == 0:
-        return empty_ontology_result(keyword, match_type="llm_search", error="OLS LLM have found no results")
+        return empty_ontology_result(keyword, ontology, match_type="llm_search", error="OLS LLM have found no results")
 
     hit = elements[0]
     score = hit.get("score")
 
     if score < OLS_LLM_MIN_SCORE:
-        result = empty_ontology_result(keyword, match_type="llm_search", error="llm_below_threshold")
+        result = empty_ontology_result(keyword, ontology, match_type="llm_search", error="llm_below_threshold")
         result["score"] = score
         return result
 
     return ontology_result_from_ols_doc(
         keyword,
+        ontology,
         hit,
         match_type="llm_semantic",
         score=score,
     )
 
-def ontology_result_from_ols_doc(input_keyword, doc, match_type, score=None):
+def ontology_result_from_ols_doc(input_keyword, ontology, doc, match_type, score=None):
 
     """
     Convert one OLS result into a standard ontology result.
 
     Args:
         input_keyword: Original ontology label from the structured output.
+        ontology: Ontology where the keyword will be searched.
         doc: OLS document returned by the API.
         match_type: Type of match used to find the ontology term.
         score: Optional semantic search score.
@@ -156,6 +161,7 @@ def ontology_result_from_ols_doc(input_keyword, doc, match_type, score=None):
 
     return {
         "keyword": input_keyword,
+        "ontology": ontology,
         "valid": True,
         "IRI": doc.get("iri"),
         "ontologyId": doc.get("obo_id"),
@@ -166,12 +172,13 @@ def ontology_result_from_ols_doc(input_keyword, doc, match_type, score=None):
         "synonyms": synonyms,
     }
 
-def empty_ontology_result(keyword, match_type=None, error=None):
+def empty_ontology_result(keyword, ontology, match_type=None, error=None):
     """
     Create a standard result for an invalid or unknown ontology.
 
     Args:
         keyword: Original keyword.
+        ontology: OLS ontology identifier.
         match_type: Type of match attempted.
         error: Optional error message.
 
@@ -180,6 +187,7 @@ def empty_ontology_result(keyword, match_type=None, error=None):
     """
     return {
         "keyword": keyword,
+        "ontology": ontology,
         "valid": False,
         "IRI": None,
         "ontologyId": None,

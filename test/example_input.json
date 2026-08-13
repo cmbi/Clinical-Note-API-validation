@@ -1,8 +1,8 @@
 [
     {
-        "Subject": 1,
+        "id": 1,
         "unstructuredData": "Test clinical note with genetic data as RFC1, and mutation NG_012232.1(NM_004006.2):c.93+1G>T; Symptoms are Diplopia and Oscillopsia",
-        "products": [
+        "structuredData": [
             {
                 "geneticDiagnosis": [
                     "RFC1",
@@ -13,12 +13,13 @@
                     "test",
                     "NT_012232.1(NM_004006.2):c.93+1G>Z"
                 ],
-                "patientData": [
+                "symptoms": [
                     "Diplopia",
                     "Oscillopsia",
                     "Oscillopsie",
                     "Test Data"
-                ]
+                ],
+                "sex":["Male"]
             }
         ]
     }

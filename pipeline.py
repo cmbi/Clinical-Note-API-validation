@@ -1,13 +1,14 @@
 from hgnc_validator import validate_gene_code
 from hgvs_validator import validate_hgvs_with_mutalyzer
 from ontology_validator import validate_ontology_term
+from config import ONTOLOGY_VALIDATION_FIELDS
 
 def validate_clinical_notes(json_data):
     """
     Validate all clinical notes in the input JSON.
 
     Args:
-        json_data: a list of clinical-note dictionaries
+        json_data: A list of clinical-note dictionaries.
 
     Returns:
         validated_notes, error_summary
@@ -21,7 +22,7 @@ def validate_clinical_notes(json_data):
     error_summary = {
         "unknownGenes": [],
         "invalidHGVS": [],
-        "unknownPatientData": [],
+        "unknownOntologyTerms": [],
     }
 
     # Validate each clinical note
@@ -29,35 +30,38 @@ def validate_clinical_notes(json_data):
         validated_note = validate_single_clinical_note(clinical_note)
         validated_notes.append(validated_note)
 
-        subject = clinical_note.get("Subject")
+        subject = clinical_note.get("id")
 
         for gene_result in validated_note["ontologyData"]["geneticDiagnosis"]:
             if not gene_result.get("valid"):
                 error_summary["unknownGenes"].append({
-                    "Subject": subject,
+                    "id": subject,
                     **gene_result,
                 })
 
         for hgvs_result in validated_note["ontologyData"]["HGVS"]:
             if not hgvs_result.get("valid"):
                 error_summary["invalidHGVS"].append({
-                    "Subject": subject,
+                    "id": subject,
                     **hgvs_result,
                 })
 
-        for patientData in validated_note["ontologyData"]["patientData"]:
-            if not patientData.get("valid"):
-                error_summary["unknownPatientData"].append({
-                    "Subject": subject,
-                    **patientData,
-                })
+        configured_fields = validated_note["ontologyData"]["ontologyFields"]
+        for field_name, field_results in configured_fields.items():
+            for ontology_result in field_results:
+                if not ontology_result.get("valid"):
+                    error_summary["unknownOntologyTerms"].append({
+                        "id": subject,
+                        "jsonProperty": field_name,
+                        **ontology_result,
+                    })
 
     return validated_notes, error_summary
 
 
 def validate_single_clinical_note(clinical_note):
     """
-    Get information from structured data in product property
+    Get information from structured data in structured fields
 
     Args:
         clinical_note: A single clinical note from the input
@@ -67,11 +71,10 @@ def validate_single_clinical_note(clinical_note):
     """
     # By default, there is always 1 element in the list
     # Therefore, always take the first one
-    product = clinical_note.get("products")[0]
+    structured_data_values = clinical_note.get("structuredData")[0]
 
-    genes = clean_list(product.get("geneticDiagnosis"))
-    patientData = clean_list(product.get("patientData"))
-    hgvs_descriptions = clean_list(product.get("HGVS"))
+    genes = clean_list(structured_data_values.get("geneticDiagnosis"))
+    hgvs_descriptions = clean_list(structured_data_values.get("HGVS"))
 
     gene_results = []
     for gene in genes:
@@ -81,20 +84,52 @@ def validate_single_clinical_note(clinical_note):
     for description in hgvs_descriptions:
         hgvs_results.append(validate_hgvs_with_mutalyzer(description))
 
-    ontology_results = []
-    for ontology_keyword in patientData:
-        ontology_results.append(validate_ontology_term(ontology_keyword))
+    ontology_results = validate_ontology_fields(structured_data_values)
+
 
     return {
-        "Subject": clinical_note.get("Subject"),
+        "id": clinical_note.get("id"),
         "unstructuredData": clinical_note.get("unstructuredData"),
-        "products": clinical_note.get("products", []),
+        "structuredData": clinical_note.get("structuredData", []),
         "ontologyData": {
             "geneticDiagnosis": gene_results,
             "HGVS": hgvs_results,
-            "patientData": ontology_results,
+            "ontologyFields": ontology_results,
         },
     }
+
+def validate_ontology_fields(structured_data_values):
+    """
+    Validate JSON properties configured in ONTOLOGY_VALIDATION_FIELDS.
+
+    Args:
+        structured_data_values: Structured fields in the dictionary
+
+    Returns:
+        Dictionary with validation results grouped by JSON property name.
+    """
+
+    ontology_results = {}
+
+    for field_config in ONTOLOGY_VALIDATION_FIELDS:
+        field_property = field_config["field"]
+        ontology = field_config["ontology"]
+
+        # For each value in the clinical note realted to the property
+        values_property = structured_data_values.get(field_property)
+        values_property = clean_list(values_property)
+
+        ontology_results[field_property] = []
+
+        for keyword in values_property:
+            ontology_results[field_property].append(
+                validate_ontology_term(
+                    keyword=keyword,
+                    ontology=ontology
+                )
+            )
+
+    return ontology_results
 
 def clean_list(value):
     """
