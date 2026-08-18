@@ -1,5 +1,6 @@
 from api_client import api_get_json
-from config import OLS4_BASE_URL, OLS_LLM_MIN_SCORE, OLS_LLM_SEARCH
+from config import OLS4_BASE_URL, OLS_LLM_MIN_SCORE, OLS_LLM_SEARCH, OLS_LLM_MODEL
+from config import MIN_REQUEST_INTERVAL_SECONDS
 
 
 ontology_cache = {}
@@ -75,7 +76,7 @@ def exact_ontology_search(keyword, ontology):
         "queryFields": "label,synonym",
     }
 
-    response = api_get_json(url, params=params)
+    response = api_get_json(url, params=params, min_interval_seconds=MIN_REQUEST_INTERVAL_SECONDS)
 
     if response is None:
         return empty_ontology_result(keyword, ontology, match_type="exact_search", error="OLS API request failed")
@@ -106,8 +107,8 @@ def llm_ontology_search(keyword, ontology):
         "page": 0,
         "size": 1,
         "lang": "en",
-        "model": "llama-embed-nemotron-8b_pca512",
-        "isDefiningOntology": "false",
+        "model": OLS_LLM_MODEL,
+        "isDefiningOntology": "true",
         "includeCurations": "true",
     }
 

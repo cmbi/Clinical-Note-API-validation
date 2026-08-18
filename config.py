@@ -4,12 +4,15 @@ MUTALYZER_BASE_URL = "https://v3.mutalyzer.nl/api"
 OLS4_BASE_URL = "https://www.ebi.ac.uk/ols4/api"
 
 # Request settings
-REQUEST_TIMEOUT_SECONDS = 20
+REQUEST_TIMEOUT_SECONDS = (3.05, 60)    #(connect timeout, read timeout)
+MAX_RETRIES = 3
+MIN_REQUEST_INTERVAL_SECONDS = 0.5
 
 # API-specific settings
 HGNC_MAX_REQUESTS_PER_SECOND = 8
 OLS_LLM_MIN_SCORE = 0.85
 OLS_LLM_SEARCH = True
+OLS_LLM_MODEL = "llama-embed-nemotron-8b_pca512"
 
 # Default ontology for general keyword validation
 ONTOLOGY_VALIDATION_FIELDS = [
@@ -20,5 +23,5 @@ ONTOLOGY_VALIDATION_FIELDS = [
     {
         "field": "sex",
         "ontology":"ncit"
-    },   
+    },
 ]
