@@ -207,5 +207,8 @@ def cache_synonyms(result):
         result: Valid ontology result containing synonyms.
     """
     for synonym in result.get("synonyms", []):
+        if isinstance(synonym, dict):
+            synonym = synonym.get("value")
+        
         if synonym not in ontology_cache:
             ontology_cache[synonym] = result
